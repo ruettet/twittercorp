@@ -1,0 +1,15 @@
+# how many twitter users do you want?
+convergence=100000
+
+# provide your Twitter credentials (get them at the twitter website, replace
+# abcd below)
+consumer_key=a
+consumer_secret=b
+access_token_key=c
+access_token_secret=d
+
+# provide here a number of seeds (twitter usernames from people from the region 
+# you want to scrape with lots of friends, e.g. newspapers or politicians. Make 
+# sure they report their location. These will be used to set things in motion. 
+# (separate by commas and no spaces)
+new_seeds=harry,frank,joe

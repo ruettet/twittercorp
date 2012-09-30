@@ -18,22 +18,6 @@ import twitter, re, time, codecs, random, cPickle, os, glob
 #   https://code.google.com/p/python-twitter/                                  #
 ################################################################################
 
-# how many twitter users do you want?
-convergence = 100000
-
-# provide your Twitter credentials (get them at the twitter website)
-api = twitter.Api(consumer_key='',
-consumer_secret='', 
-access_token_key='', 
-access_token_secret='')
-
-# provide here a number of seeds (people from the region you want to scrape
-# with lots of friends, e.g. newspapers or politicians. Make sure they
-# report their location. These will be used to set things in motion.
-new_seeds = [""]
-			
-################################################################################
-
 def addLocation(slist):
 	""" ad hoc method to grab the reported location of usernames in a list """
 	out = []
@@ -105,19 +89,64 @@ def unique(l):
 			out.append(i)
 	return out
 
+def getSettings():
+	""" method to read in the settings from settings.txt """
+	
+	out = {}
+	
+	fin = open("settings.txt", "r")
+	txt = fin.read()
+	fin.close()
+
+	regex = re.compile("convergence=(\d+)")
+	out["convergence"] = int(regex.findall(txt)[0])
+	regex = re.compile("new_seeds=(.+)")
+	out["seeds"] = regex.findall(txt)[0].split(",")
+	regex = re.compile("consumer_key=(.+)")
+	ckey = regex.findall(txt)[0]
+	regex = re.compile("consumer_secret=(.+)")
+	csecret = regex.findall(txt)[0]
+	regex = re.compile("access_token_key=(.+)")
+	atkey = regex.findall(txt)[0]
+	regex = re.compile("access_token_secret=(.+)")
+	atsecret = regex.findall(txt)[0]
+	out["api"] = (ckey, csecret, atkey, atsecret)
+	
+	return out
+
 ################################################################################
 
+# get user input from file
+print "reading in settings..."
+stts = getSettings()
+convergence = stts["convergence"]
+(consumerkey, consumersecret, accesstokenkey, accesstokensecret) = stts["api"]
+new_seeds = stts["seeds"]
+print "settings read"
+
+# initialize the api
+print "initializing Twitter api..."
+api = twitter.Api(consumer_key=consumerkey,
+consumer_secret=consumersecret, 
+access_token_key=accesstokenkey, 
+access_token_secret=accesstokensecret)
+print "Twitter api initialized"
+
 # verify if this script was run already
+print "checking if this is the first run..."
 initcheck = doInitCheck()
+print "First run:", initcheck
 
 # if this is the first run, initialize the working space
 if initcheck == True:
+	print "initializing working directory..."
 	os.system("mkdir locations") # make the necessary directory for the corpus
 	seeds = addLocation(new_seeds) # add the location to these seeds
 	# and save this information
 	fout = open("unames.txt", "w")
 	fout.write("\n".join(seeds))
 	fout.close()
+	print "working directory initialized"
 
 # grab the usernames that were already present
 fin = open("unames.txt", "r")
@@ -142,6 +171,7 @@ unames = fin.readlines()
 fin.close()
 
 # remove the twitter users that were already scraped
+print "cleaning up..."
 done = []
 donefs = glob.glob("./locations/*/*.tweets")
 for donef in donefs:
@@ -152,6 +182,7 @@ for uname in unames:
 	name = uname.split(",")[0]
 	if name not in done:
    		unamesfilter.append(uname)
+print "everything clean, moving on to actual downloading of the corpus..."
 
 # how many users are we speaking about? Print some information
 print "input", len(unames)
