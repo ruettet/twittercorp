@@ -27,13 +27,14 @@ def addLocation(slist):
 	for s in slist:
 		s = s.split("\t")[0]
 		l = api.GetUser(s).location
-		for loc in locations:
-			loc = loc.strip()
-			if loc.lower() in l.lower():
-				l = loc.lower()
-				print s, l
-				out.append( unicode(s + "," + l))
-				break
+		if l:
+			for loc in locations:
+				loc = loc.strip()
+				if loc.lower() in l.lower():
+					l = loc.lower()
+					print s, l
+					out.append( unicode(s + "," + l))
+					break
 	return out
 
 def acceptableLocation(l):
@@ -86,7 +87,7 @@ def unique(l):
 	out = []
 	for i in l:
 		if i not in out:
-			out.append(i)
+			out.append(i.strip())
 	return out
 
 def getSettings():
@@ -143,30 +144,31 @@ if initcheck == True:
 	os.system("mkdir locations") # make the necessary directory for the corpus
 	seeds = addLocation(new_seeds) # add the location to these seeds
 	# and save this information
-	fout = open("unames.txt", "w")
+	fout = codecs.open("unames.txt", "w", "utf-8")
 	fout.write("\n".join(seeds))
 	fout.close()
 	print "working directory initialized"
 
 # grab the usernames that were already present
-fin = open("unames.txt", "r")
+fin = codecs.open("unames.txt", "r", "utf-8")
 seeds = fin.readlines()
 fin.close()
 
 # keep finding new seeds until convergence
 while len(seeds) < convergence:
+	seeds = unique(seeds)
 	print "there are now", len(seeds), "seeds"
-	new_seeds = newseeds(seeds)
+	new_seeds = newseeds(random.sample(seeds,15))
 	seeds.extend(new_seeds)
 	seeds = unique(seeds)
-	fin = codecs.open("unames.txt", "w", encoding="utf-8")
+	fin = codecs.open("unames.txt", "w", "utf-8")
 	fin.write("\n".join(seeds))
 	fin.close()
 
 print "got all the seeds we need! Moving on to retrieving the seed's tweets."
 
 # to be on the safe side, we read in the lates unames.txt
-fin = open("unames.txt", "r")
+fin = codecs.open("unames.txt", "r", "utf-8")
 unames = fin.readlines()
 fin.close()
 
