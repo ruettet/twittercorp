@@ -7,6 +7,7 @@ import twitter, re, time, codecs, random, cPickle, os, glob
 # the tweet. This approach, however, is more conservative because it ignores   #
 # the mobility of the twitter user.                                            #
 # Tom Ruette, 14 september 2012                                                #
+# update Tom Ruette, 21 september 2012
 #                                                                              #
 # tw.py: main script to which you should provide:                              #
 # - twitter credentials                                                        #
@@ -158,7 +159,10 @@ fin.close()
 while len(seeds) < convergence:
 	seeds = unique(seeds)
 	print "there are now", len(seeds), "seeds"
-	new_seeds = newseeds(random.sample(seeds,15))
+	if len(seeds) > 15:
+		new_seeds = newseeds(random.sample(seeds,15))
+	else:
+		new_seeds = newseeds(seeds)
 	seeds.extend(new_seeds)
 	seeds = unique(seeds)
 	fin = codecs.open("unames.txt", "w", "utf-8")
@@ -209,7 +213,7 @@ for uname in unamesfilter:
 		# go through the data that was retrieved from twitter
 		for s in tl:
 			date = s.created_at # data
-			identifier = str(s.id) # tweet id
+			identifier = unicode(s.id) # tweet id
 			text = s.text # tweet itself
 			# the xml
 			out = unicode("<tweet date=\"" + date + "\" id=\"" + identifier + 
@@ -217,13 +221,13 @@ for uname in unamesfilter:
 			store = store + out
 		store = store.strip() + "\n</tweets>" # close the xml
 		# if this is the first observation in this location, init the folder
-		if str("./locations/" + loc) not in glob.glob("./locations/*"):
+		floc = loc.replace(" ", "\ ")
+		if unicode("./locations/" + unicode(loc)) not in glob.glob(u"./locations/*"):
 			print "making the directory"
-			os.system("mkdir ./locations/" + loc)
+			os.system("mkdir ./locations/" + floc.encode("utf-8"))
 		# save the xml
-		fout = codecs.open("./locations/" + loc + "/" + name + ".tweets", "w", 
-							encoding="utf-8")
-		fout.write(unicode(store))
+		fout = codecs.open("./locations/" + loc.encode("utf-8") + "/" + name.encode("utf-8") + ".tweets", "w", encoding="utf-8")
+		fout.write(store)
 		fout.close()
 	# if something goes wrong, just ignore it, continue and it will be tried 
 	# again later
