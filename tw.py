@@ -39,7 +39,8 @@ def addLocation(slist):
 
 def acceptableLocation(l):
 	""" ad hoc method to check if a reported location l is in a list of wanted
-	locations cities.txt """
+	locations cities.txt, it also contains a possibility to balance the amount
+	of users over the locations """
 	out = False
 	fin = codecs.open("cities.txt", "r", "utf-8")
 	locations = fin.readlines()
@@ -48,6 +49,32 @@ def acceptableLocation(l):
 		if loc.strip().lower() in l.lower():
 			out = loc.strip()
 			break
+
+	return out
+	
+def seedsLocFilter(seeds):
+	out = []
+	fin = codecs.open("unames.txt", "r", "utf-8")
+	unameLoc = {}
+	unames = fin.readlines()
+	fin.close()
+	for uname in unames:
+	  if len(uname.split(",")) > 1:
+		u = uname.split(",")[0]
+		l = uname.split(",")[1].strip()
+		try:
+			unameLoc[l].append(u)
+		except KeyError:
+			unameLoc[l] = [u]
+	locstodo = []
+	for l in unameLoc.keys():
+		if len(unameLoc[l]) < 100:
+			locstodo.append(l)
+	for s in seeds:
+		if len(s.split(",")) > 1:
+			seedloc = s.split(",")[-1].strip()
+			if seedloc in locstodo:
+				out.append(s)
 	return out
 
 def newseeds(seedlist):
@@ -56,8 +83,25 @@ def newseeds(seedlist):
 	out = []
 	i = 1
 	random.shuffle(seedlist)
+	fin = codecs.open("unames.txt", "r", "utf-8")
+	unameLoc = {}
+	unames = fin.readlines()
+	fin.close()
+	for uname in unames:
+	  if len(uname.split(",")) > 1:
+		u = uname.split(",")[0]
+		l = uname.split(",")[1].strip()
+		try:
+			unameLoc[l].append(u)
+		except KeyError:
+			unameLoc[l] = [u]
+	locstodo = []
+	for l in unameLoc.keys():
+		if len(unameLoc[l]) > 99:
+			locstodo.append(l)
+	print "Locations that are done:", ", ".join(locstodo), "(", len(locstodo), ")"
 	for sl in seedlist:
-		print i, "of", len(seedlist)
+		print i, "of", len(seedlist), "(seeder:", sl.strip(), ")"
 		i+=1
 		s = sl.split(",")[0]
 		try:
@@ -66,7 +110,7 @@ def newseeds(seedlist):
 			for friend in friends:
 				floc = unicode(friend.location)
 				floc = acceptableLocation(floc)
-				if floc != False:
+				if floc != False and len(unameLoc[floc]) < 100:
 					print "doing:", unicode(friend.screen_name + "," + floc)
 					out.append(unicode(friend.screen_name + "," + floc))
 		except Exception,e:
@@ -84,11 +128,10 @@ def doInitCheck():
 	
 def unique(l):
 	""" silly method to remove duplicates from a list """
-	out = []
-	for i in l:
-		if i not in out:
-			out.append(i.strip())
-	return out
+	keys = {}
+	for e in l:
+		keys[e] = 1
+	return keys.keys()
 
 def getSettings():
 	""" method to read in the settings from settings.txt """
@@ -152,13 +195,18 @@ if initcheck == True:
 # grab the usernames that were already present
 fin = codecs.open("unames.txt", "r", "utf-8")
 seeds = fin.readlines()
+seeds = unique(seeds)
 fin.close()
 
 # keep finding new seeds until convergence
 while len(seeds) < convergence:
 	seeds = unique(seeds)
 	print "there are now", len(seeds), "seeds"
-	new_seeds = newseeds(random.sample(seeds,15))
+	locfilterseeds = seedsLocFilter(seeds)
+	if len(locfilterseeds) > 15:
+		new_seeds = newseeds(random.sample(locfilterseeds,15))
+	else:
+		new_seeds = newseeds(seeds)
 	seeds.extend(new_seeds)
 	seeds = unique(seeds)
 	fin = codecs.open("unames.txt", "w", "utf-8")
@@ -195,6 +243,7 @@ print "todo", len(unamesfilter)
 # folder that bears the name of the location.
 random.shuffle(unamesfilter)
 for uname in unamesfilter:
+    if uname.strip():
 	name = uname.split(",")[0] # username
 	loc = ",".join(uname.split(",")[1:]).strip() # normalized location
 	print name, "in", loc
@@ -209,7 +258,7 @@ for uname in unamesfilter:
 		# go through the data that was retrieved from twitter
 		for s in tl:
 			date = s.created_at # data
-			identifier = str(s.id) # tweet id
+			identifier = unicode(s.id) # tweet id
 			text = s.text # tweet itself
 			# the xml
 			out = unicode("<tweet date=\"" + date + "\" id=\"" + identifier + 
@@ -217,13 +266,13 @@ for uname in unamesfilter:
 			store = store + out
 		store = store.strip() + "\n</tweets>" # close the xml
 		# if this is the first observation in this location, init the folder
-		if str("./locations/" + loc) not in glob.glob("./locations/*"):
+		floc = loc.replace(" ", "\ ")
+		if unicode("./locations/" + unicode(loc)) not in glob.glob(u"./locations/*"):
 			print "making the directory"
-			os.system("mkdir ./locations/" + loc)
+			os.system("mkdir ./locations/" + floc.encode("utf-8"))
 		# save the xml
-		fout = codecs.open("./locations/" + loc + "/" + name + ".tweets", "w", 
-							encoding="utf-8")
-		fout.write(unicode(store))
+		fout = codecs.open("./locations/" + loc.encode("utf-8") + "/" + name.encode("utf-8") + ".tweets", "w", encoding="utf-8")
+		fout.write(store)
 		fout.close()
 	# if something goes wrong, just ignore it, continue and it will be tried 
 	# again later
