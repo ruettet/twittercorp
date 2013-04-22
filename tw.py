@@ -1,281 +1,286 @@
-import twitter, re, time, codecs, random, cPickle, os, glob
-
-################################################################################
-# Script to make a large twitter corpus that has regional information on the   #
-# basis of the reported location of the twitter user. This approach is less    #
-# fast than tapping in on the Twitter hose and filtering on the geocoding of   #
-# the tweet. This approach, however, is more conservative because it ignores   #
-# the mobility of the twitter user.                                            #
-# Tom Ruette, 14 september 2012                                                #
-#                                                                              #
-# tw.py: main script to which you should provide:                              #
-# - twitter credentials                                                        #
-# - list of initial seeds                                                      #
-# - list of locations (in a files cities.txt, one location per line)           #
-#                                                                              #
-# Remarks:                                                                     #
-# - twitter module is python-twitter (not easy_install version, but the url:   #
-#   https://code.google.com/p/python-twitter/                                  #
-################################################################################
-
-def addLocation(slist):
-	""" ad hoc method to grab the reported location of usernames in a list """
-	out = []
-	fin = codecs.open("cities.txt", "r", "utf-8")
-	locations = fin.readlines()
-	fin.close()
-	for s in slist:
-		s = s.split("\t")[0]
-		l = api.GetUser(s).location
-		if l:
-			for loc in locations:
-				loc = loc.strip()
-				if loc.lower() in l.lower():
-					l = loc.lower()
-					print s, l
-					out.append( unicode(s + "," + l))
-					break
-	return out
-
-def acceptableLocation(l):
-	""" ad hoc method to check if a reported location l is in a list of wanted
-	locations cities.txt, it also contains a possibility to balance the amount
-	of users over the locations """
-	out = False
-	fin = codecs.open("cities.txt", "r", "utf-8")
-	locations = fin.readlines()
-	fin.close()
-	for loc in locations:
-		if loc.strip().lower() in l.lower():
-			out = loc.strip()
-			break
-
-	return out
-	
-def seedsLocFilter(seeds):
-	out = []
-	fin = codecs.open("unames.txt", "r", "utf-8")
-	unameLoc = {}
-	unames = fin.readlines()
-	fin.close()
-	for uname in unames:
-	  if len(uname.split(",")) > 1:
-		u = uname.split(",")[0]
-		l = uname.split(",")[1].strip()
-		try:
-			unameLoc[l].append(u)
-		except KeyError:
-			unameLoc[l] = [u]
-	locstodo = []
-	for l in unameLoc.keys():
-		if len(unameLoc[l]) < 100:
-			locstodo.append(l)
-	for s in seeds:
-		if len(s.split(",")) > 1:
-			seedloc = s.split(",")[-1].strip()
-			if seedloc in locstodo:
-				out.append(s)
-	return out
-
-def newseeds(seedlist):
-	""" ad hoc method that grabs the friends in acceptable locations from the
-	seeds in seedlist """
-	out = []
-	i = 1
-	random.shuffle(seedlist)
-	fin = codecs.open("unames.txt", "r", "utf-8")
-	unameLoc = {}
-	unames = fin.readlines()
-	fin.close()
-	for uname in unames:
-	  if len(uname.split(",")) > 1:
-		u = uname.split(",")[0]
-		l = uname.split(",")[1].strip()
-		try:
-			unameLoc[l].append(u)
-		except KeyError:
-			unameLoc[l] = [u]
-	locstodo = []
-	for l in unameLoc.keys():
-		if len(unameLoc[l]) > 99:
-			locstodo.append(l)
-	print "Locations that are done:", ", ".join(locstodo), "(", len(locstodo), ")"
-	for sl in seedlist:
-		print i, "of", len(seedlist), "(seeder:", sl.strip(), ")"
-		i+=1
-		s = sl.split(",")[0]
-		try:
-			time.sleep(11.5)
-			friends = api.GetFriends(user=s)
-			for friend in friends:
-				floc = unicode(friend.location)
-				floc = acceptableLocation(floc)
-				if floc != False and len(unameLoc[floc]) < 100:
-					print "doing:", unicode(friend.screen_name + "," + floc)
-					out.append(unicode(friend.screen_name + "," + floc))
-		except Exception,e:
-			print e
-	return out
-	
-def doInitCheck():
-	""" the initcheck consists of checking if some usernames were found yet """
-	try:
-		fin = open("unames.txt", "r")
-		fin.close()
-		return False
-	except:
-		return True
-	
-def unique(l):
-	""" silly method to remove duplicates from a list """
-	keys = {}
-	for e in l:
-		keys[e] = 1
-	return keys.keys()
+import re, twitter, glob, random, time, codecs, hashlib
+from geopy import geocoders
+from collections import Counter
 
 def getSettings():
-	""" method to read in the settings from settings.txt """
-	
-	out = {}
-	
-	fin = open("settings.txt", "r")
-	txt = fin.read()
-	fin.close()
+  """ method to read in the settings from settings.txt """
+  out = {}
+  fin = open("settings.txt", "r")
+  txt = fin.read()
+  fin.close()
+  regex = re.compile("convergence=(\d+)")
+  out["convergence"] = int(regex.findall(txt)[0])
+  regex = re.compile("locmin=(\d+)")
+  out["locmin"] = int(regex.findall(txt)[0])
+  regex = re.compile("new_seeds=(.+)")
+  out["seeds"] = regex.findall(txt)[0].split(",")
+  regex = re.compile("consumer_key=(.+)")
+  ckey = regex.findall(txt)[0]
+  regex = re.compile("consumer_secret=(.+)")
+  csecret = regex.findall(txt)[0]
+  regex = re.compile("access_token_key=(.+)")
+  atkey = regex.findall(txt)[0]
+  regex = re.compile("access_token_secret=(.+)")
+  atsecret = regex.findall(txt)[0]
+  out["api"] = (ckey, csecret, atkey, atsecret)
+  return out
 
-	regex = re.compile("convergence=(\d+)")
-	out["convergence"] = int(regex.findall(txt)[0])
-	regex = re.compile("new_seeds=(.+)")
-	out["seeds"] = regex.findall(txt)[0].split(",")
-	regex = re.compile("consumer_key=(.+)")
-	ckey = regex.findall(txt)[0]
-	regex = re.compile("consumer_secret=(.+)")
-	csecret = regex.findall(txt)[0]
-	regex = re.compile("access_token_key=(.+)")
-	atkey = regex.findall(txt)[0]
-	regex = re.compile("access_token_secret=(.+)")
-	atsecret = regex.findall(txt)[0]
-	out["api"] = (ckey, csecret, atkey, atsecret)
-	
-	return out
+def getPriorSeeds(f):
+  """ go through the seedlist and structure them as they should """
+  out = []
+  try:
+    fin = codecs.open(f, "r", "utf-8")
+    seeds = fin.readlines()
+    fin.close()
+    if len(seeds) == 0:
+      raise IOError
+    for seed in seeds:
+      uname = unicode(seed.split(",")[0])
+      loc = unicode(",".join(seed.strip().split(",")[1:]))
+      if loc != False:
+        out.append( (uname, loc) )
+  except IOError:
+    stts = getSettings()
+    seeds = stts["seeds"]
+    i = 0
+    haveLocs = usersByLoc(seeds)
+    while i < len(seeds):
+      loc = acceptableLocation(seeds[i+1], [], haveLocs)
+      if loc != False:
+        seed = (unicode(seeds[i]), unicode(loc[0]))
+        out.append(seed)
+      i = i + 2
+  return out
 
-################################################################################
+def getNewSeeds(sample, seeds, api):
+  """ wrapper to get from a list of seeds (sample) new seeds that do not occur
+      in the given seeds (seeds) already """
+  out = []
+  i = 1
+  for s in sample:
+    print "seed ", i, s
+    i = i + 1
+    try:
+      friends = getFriends(s, seeds, api)
+      remaining = set(friends) - set(seeds) - set(out)
+      out.extend(list(remaining))
+    except:
+      continue
+  return out
 
-# get user input from file
-print "reading in settings..."
-stts = getSettings()
-convergence = stts["convergence"]
-(consumerkey, consumersecret, accesstokenkey, accesstokensecret) = stts["api"]
-new_seeds = stts["seeds"]
-print "settings read"
+def getFriends(s, seeds, api):
+  """ call the twitter api for new friends from a single user """
+  out = []
+  uname = unicode(s[0])
+  time.sleep(11.5)
+  friends = api.GetFriends(user=uname)
+  haveLocs = usersByLoc(seeds)
+  count = 1
+  for friend in friends:
+    floc = unicode(friend.location)
+    checkedloc = acceptableLocation(floc, seeds, haveLocs)
+    if checkedloc != False:
+      print "\tadding:", unicode(friend.screen_name), floc, checkedloc, count, "of", len(friends)
+      out.append( (unicode(friend.screen_name), unicode(checkedloc[0])) )
+    count = count + 1
+  return out
 
-# initialize the api
-print "initializing Twitter api..."
-api = twitter.Api(consumer_key=consumerkey,
-consumer_secret=consumersecret, 
-access_token_key=accesstokenkey, 
-access_token_secret=accesstokensecret)
-print "Twitter api initialized"
+def getLocDB():
+  """ read the db in which normalizations of reported locations are stored """
+  db = {}
+  try:
+    fin = codecs.open("locdb.txt", "r", "utf-8")
+    lines = fin.readlines()
+    fin.close()
+    for line in lines:
+      l = line.strip().split("\t")
+      if len(l) == 4:
+        db[l[0]] = [l[1], l[2], l[3]]
+  except IOError:
+    print "no location database available"
+  return db
 
-# verify if this script was run already
-print "checking if this is the first run..."
-initcheck = doInitCheck()
-print "First run:", initcheck
+def setLocDB(db):
+  """ store the db with normalizations of reported locations """
+  lines = []
+  for l in db.keys():
+    lst = [l, db[l][0], unicode(db[l][1]), unicode(db[l][2])]
+    line = u"\t".join(lst)
+    lines.append(line)
+  fout = codecs.open("locdb.txt", "w", "utf-8")
+  fout.write( u"\n".join(lines))
+  fout.close()
 
-# if this is the first run, initialize the working space
-if initcheck == True:
-	print "initializing working directory..."
-	os.system("mkdir locations") # make the necessary directory for the corpus
-	seeds = addLocation(new_seeds) # add the location to these seeds
-	# and save this information
-	fout = codecs.open("unames.txt", "w", "utf-8")
-	fout.write("\n".join(seeds))
-	fout.close()
-	print "working directory initialized"
+def usersByLoc(seeds):
+  """ turn the unsorted seedlist into a dictionary per location """
+  out = {}
+  for seed in seeds:
+    uname = seed[0]
+    loc = seed[1]
+    try:
+      out[loc].append(uname)
+    except KeyError:
+      out[loc] = [uname]
+  return out
 
-# grab the usernames that were already present
-fin = codecs.open("unames.txt", "r", "utf-8")
-seeds = fin.readlines()
-seeds = unique(seeds)
-fin.close()
+def acceptableLocation(l, seeds, haveLocs):
+  """ check if the reported location is an acceptable location via normalization
+      with the google geocoder """
+  stts = getSettings()
+  locmin = stts["locmin"]
+  out = False
+  if l != "None":
+    locdb = getLocDB()
+    try:
+      [place, lat, lng] = locdb[l]
+      try:
+        if len(haveLocs[place]) < locmin:
+          out = [place, lat, lng]
+      except:
+        out = [place, lat, lng]
+    except:
+      fin = codecs.open("cities.txt", "r", "utf-8")
+      locations = fin.readlines()
+      fin.close()
+      g = geocoders.GoogleV3()
+      try:
+        place, (lat, lng) = list(g.geocode(l.encode("utf-8"), 
+                                           exactly_one=False))[0]
+        print "\tnormalized", l, "to", place
+        try:
+          if len(haveLocs[place]) < locmin:
+            out = [place, lat, lng]
+        except KeyError:
+          out = [place, lat, lng]
+        locdb[l] = [place, lat, lng]
+        setLocDB(locdb)
+      except Exception, e:
+        print "\tGeocoder exception", e
+  return out
 
-# keep finding new seeds until convergence
-while len(seeds) < convergence:
-	seeds = unique(seeds)
-	print "there are now", len(seeds), "seeds"
-	locfilterseeds = seedsLocFilter(seeds)
-	if len(locfilterseeds) > 15:
-		new_seeds = newseeds(random.sample(locfilterseeds,15))
-	else:
-		new_seeds = newseeds(seeds)
-	seeds.extend(new_seeds)
-	seeds = unique(seeds)
-	fin = codecs.open("unames.txt", "w", "utf-8")
-	fin.write("\n".join(seeds))
-	fin.close()
+def saveSeeds(seeds):
+  """ write out the seedlist """
+  out = []
+  for seed in seeds:
+    out.append( seed[0].strip() + "," + seed[1].strip() )
+  fout = codecs.open("seedlist.txt", "w", "utf-8")
+  fout.write( u"\n".join(out) )
+  fout.close()
 
-print "got all the seeds we need! Moving on to retrieving the seed's tweets."
+def getSeeds(api):
+  """ get the seedlist """
+  seeds = getPriorSeeds("seedlist.txt")
+  milked = []
+  stts = getSettings()
+  convergence = stts["convergence"]
+  while (len(seeds) < convergence):
+    seedsample = []
+    try:
+      seedsample = random.sample(set(seeds), 1)
+    except ValueError:
+      seedsample = seeds
+    milked.extend(seedsample)
+    newseeds = getNewSeeds(seedsample, seeds, api)
+    seeds.extend(newseeds)
+    saveSeeds(seeds)
+    print "there are now", len(seeds), "available"
+  return seeds
 
-# to be on the safe side, we read in the lates unames.txt
-fin = codecs.open("unames.txt", "r", "utf-8")
-unames = fin.readlines()
-fin.close()
+def getTweets(uname, loc):
+  """ fetch the tweets of a given user, parameter loc is the standardized
+      location for this user """
+  out = []
+  try:
+    time.sleep(10) # sleep as there is a limited amount of calls to twitter
+    # the following call gets all the data
+    tl = api.GetUserTimeline(uname, include_entities=False, count=200)
+    print "\tfound", len(tl), "statuses"
+    # go through the data that was retrieved from twitter
+    for s in tl:
+      date = s.created_at # data
+      identifier = unicode(s.id) # tweet id
+      text = s.text # tweet itself
+      reploc = s.GetUser().location # reported location
+      if reploc == None:
+        reploc = "NA"
+      out.append( unicode("<tweet user=\"" + uname + "\" norm_loc=\"" + loc + 
+                          "\" rep_loc=\"" + reploc + "\" date=\"" + date + 
+                          "\" id=\"" +   identifier + "\">" + text + 
+                          "</tweet>") )
+  except:
+    print "something went wrong, just skipping this"
+  return out
 
-# remove the twitter users that were already scraped
-print "cleaning up..."
-done = []
-donefs = glob.glob("./locations/*/*.tweets")
-for donef in donefs:
-        username = ".".join(donef.split("/")[-1].split(".")[:-1])
-        done.append(username)
-unamesfilter = []
-for uname in unames:
-	name = uname.split(",")[0]
-	if name not in done:
-   		unamesfilter.append(uname)
-print "everything clean, moving on to actual downloading of the corpus..."
+def xmlstore(l):
+  """ store a list of tweets from getTweets as xml """
+  print "writing out to file"
+  out = "<tweets>\n" + "\n".join(l) + "\n</tweets"
+  fname = "./tweets/" + hashlib.sha224(out.encode("utf-8")).hexdigest() + ".xml"
+  fout = codecs.open(fname, "w", "utf-8")
+  fout.write(out)
+  fout.close()
 
-# how many users are we speaking about? Print some information
-print "input", len(unames)
-print "done", len(done)
-print "todo", len(unamesfilter)
+def sortSeeds(seeds, sorter):
+  """ sort the seeds, currently only biglocationfirst available """
+  out = []
+  if sorter == "bigLocationsFirst":
+    locs = []
+    db = {}
+    for (uname, loc) in seeds:
+      locs.append(loc)
+      try:
+         db[loc].append(uname)
+      except KeyError:
+        db[loc] = [uname]
+    freqs = Counter(locs)
+    while freqs:
+      curloc = freqs.most_common(1)[0]
+      del freqs[curloc[0]]
+      for seed in db[curloc[0]]:
+        out.append( (seed, curloc[0]) )
+  return out
 
-# go through the remaining users and download their tweets, which are stored in
-# folder that bears the name of the location.
-random.shuffle(unamesfilter)
-for uname in unamesfilter:
-    if uname.strip():
-	name = uname.split(",")[0] # username
-	loc = ",".join(uname.split(",")[1:]).strip() # normalized location
-	print name, "in", loc
-	print "\tsearching for statuses"
-	time.sleep(10) # sleep as there is a limited amount of calls to twitter
-	try:
-		# the following call gets all the data
-		tl = api.GetUserTimeline(name, include_entities=False, count=200)
-		print "\tfound", len(tl), "statuses"
-		# store will carry the xml that we are going to output
-		store = "<tweets>\n"
-		# go through the data that was retrieved from twitter
-		for s in tl:
-			date = s.created_at # data
-			identifier = unicode(s.id) # tweet id
-			text = s.text # tweet itself
-			# the xml
-			out = unicode("<tweet date=\"" + date + "\" id=\"" + identifier + 
-					"\">" + text + "</tweet>\n")
-			store = store + out
-		store = store.strip() + "\n</tweets>" # close the xml
-		# if this is the first observation in this location, init the folder
-		floc = loc.replace(" ", "\ ")
-		if unicode("./locations/" + unicode(loc)) not in glob.glob(u"./locations/*"):
-			print "making the directory"
-			os.system("mkdir ./locations/" + floc.encode("utf-8"))
-		# save the xml
-		fout = codecs.open("./locations/" + loc.encode("utf-8") + "/" + name.encode("utf-8") + ".tweets", "w", encoding="utf-8")
-		fout.write(store)
-		fout.close()
-	# if something goes wrong, just ignore it, continue and it will be tried 
-	# again later
-	except Exception, e:
-		print "\terror", e
-		continue
+def getUserNames():
+  """ extract from downloaded tweets all the downloaded usernames """
+  out = []
+  fl = glob.glob("./tweets/*")
+  regex = re.compile("user=\"(.+?)\"")
+  for f in fl:
+    fin = codecs.open(f, "r", "utf-8")
+    xml = fin.read()
+    fin.close()
+    out.extend( regex.findall(xml) )
+  return set(out)
+
+def main()
+  """ this is where it all starts """
+  # get user input from file
+  print "reading in settings..."
+  stts = getSettings()
+  (consumerkey, consumersecret, accesstokenkey, accesstokensecret) = stts["api"]
+  
+  # initialize the api
+  print "initializing Twitter api..."
+  api = twitter.Api(consumer_key=consumerkey,
+  consumer_secret=consumersecret, 
+  access_token_key=accesstokenkey, 
+  access_token_secret=accesstokensecret)
+  
+  # add to the seedlist
+  seeds = getSeeds(api)
+  print "got all the seeds we need..."
+  users_have = getUserNames()
+  sortedSeeds = sortSeeds(seeds, "bigLocationsFirst")
+  tweetnum = 0
+  tweets = []
+  for (seed, loc) in sortedSeeds:
+    if seed not in users_have:
+      print "grabbing tweets for", seed, loc
+      tweets.extend( getTweets(seed, loc) )
+      if len(tweets) > 10000:
+        xmlstore(tweets)
+        tweets = []
+  xmlstore(tweets)
+
+if __name__ == "__main__":
+    main()
