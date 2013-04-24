@@ -144,16 +144,22 @@ def acceptableLocation(l, seeds, haveLocs):
       fin.close()
       g = geocoders.GoogleV3()
       try:
+        time.sleep(20.0) # sleep a bit so that we do not overdo the geocoder
         place, (lat, lng) = list(g.geocode(l.encode("utf-8"), 
                                            exactly_one=False))[0]
         print "\tnormalized", l, "to", place
-        try:
-          if len(haveLocs[place]) < locmin:
-            out = [place, lat, lng]
-        except KeyError:
-          out = [place, lat, lng]
-        locdb[l] = [place, lat, lng]
-        setLocDB(locdb)
+        for location in locations:
+          regex = re.compile(r"\b" + location.lower() + "\b")
+          if len(regex.findall(location)) > 0:
+            # check if the amount of locations is not too big
+            try:
+              if len(haveLocs[place]) < locmin:
+                out = [place, lat, lng]
+            # if the location is not in haveLocs yet, it's ok
+            except KeyError:
+              out = [place, lat, lng]
+              locdb[l] = [place, lat, lng]
+              setLocDB(locdb)
       except Exception, e:
         print "\tGeocoder exception", e
   return out
