@@ -73,14 +73,16 @@ def getFriends(s, seeds, api):
   out = []
   uname = unicode(s[0])
   time.sleep(11.5)
-  friends = api.GetFriends(user=uname)
+  print "searching friends for", s
+  ids = api.GetFollowerIDs(screen_name=uname)
   haveLocs = usersByLoc(seeds)
   count = 1
-  for friend in friends:
+  for ajd in ids:
+    friend = api.GetUser(user_id=ajd)
     floc = unicode(friend.location)
     checkedloc = acceptableLocation(floc, seeds, haveLocs)
     if checkedloc != False:
-      print "\tadding:", unicode(friend.screen_name), floc, checkedloc, count, "of", len(friends)
+      print "\tadding:", unicode(friend.screen_name), floc, checkedloc, count, "of", len(ids)
       out.append( (unicode(friend.screen_name), unicode(checkedloc[0])) )
     count = count + 1
   return out
@@ -149,8 +151,9 @@ def acceptableLocation(l, seeds, haveLocs):
                                            exactly_one=False))[0]
         print "\tnormalized", l, "to", place
         for location in locations:
-          regex = re.compile(r"\b" + location.lower() + "\b")
-          if len(regex.findall(location)) > 0:
+          location = location.strip()
+          regex = re.compile(r"\b" + location + r"\b", re.IGNORECASE)
+          if len(regex.findall(place)) > 0:
             # check if the amount of locations is not too big
             try:
               if len(haveLocs[place]) < locmin:
@@ -161,7 +164,7 @@ def acceptableLocation(l, seeds, haveLocs):
               locdb[l] = [place, lat, lng]
               setLocDB(locdb)
       except Exception, e:
-        print "\tGeocoder exception", e
+        continue
   return out
 
 def saveSeeds(seeds):
@@ -199,7 +202,7 @@ def getTweets(uname, loc):
   try:
     time.sleep(10) # sleep as there is a limited amount of calls to twitter
     # the following call gets all the data
-    tl = api.GetUserTimeline(uname, include_entities=False, count=200)
+    tl = api.GetUserTimeline(uname, include_entities=False, count=2000)
     print "\tfound", len(tl), "statuses"
     # go through the data that was retrieved from twitter
     for s in tl:
@@ -258,7 +261,7 @@ def getUserNames():
     out.extend( regex.findall(xml) )
   return set(out)
 
-def main()
+def main():
   """ this is where it all starts """
   # get user input from file
   print "reading in settings..."
