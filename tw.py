@@ -60,25 +60,51 @@ def getNewSeeds(sample, seeds, api):
   for s in sample:
     print "seed ", i, s
     i = i + 1
-    try:
+
+    # call to api
+    rls = api.GetRateLimitStatus()
+    if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
       friends = getFriends(s, seeds, api)
-      remaining = set(friends) - set(seeds) - set(out)
-      out.extend(list(remaining))
-    except:
-      continue
+    else:
+      sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
+      print "sleeping for", sleeptime + 5, "seconds"
+      time.sleep(sleeptime + 5)
+      friends = getFriends(s, seeds, api)
+
+    remaining = set(friends) - set(seeds) - set(out)
+    out.extend(list(remaining))
   return out
 
 def getFriends(s, seeds, api):
   """ call the twitter api for new friends from a single user """
   out = []
   uname = unicode(s[0])
-  time.sleep(11.5)
   print "searching friends for", s
-  ids = api.GetFollowerIDs(screen_name=uname)
+
+  # call to api
+  rls = api.GetRateLimitStatus()
+  if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
+    ids = api.GetFollowerIDs(screen_name=uname)
+  else:
+    sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
+    print "sleeping for", sleeptime + 5, "seconds"
+    time.sleep(sleeptime + 5)
+    ids = api.GetFollowerIDs(screen_name=uname)
+
   haveLocs = usersByLoc(seeds)
   count = 1
   for ajd in ids:
-    friend = api.GetUser(user_id=ajd)
+
+    # call to api
+    rls = api.GetRateLimitStatus()
+    if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
+      friend = api.GetUser(user_id=ajd)
+    else:
+      sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
+      print "sleeping for", sleeptime + 5, "seconds"
+      time.sleep(sleeptime + 5)
+      friend = api.GetUser(user_id=ajd)
+
     floc = unicode(friend.location)
     checkedloc = acceptableLocation(floc, seeds, haveLocs)
     if checkedloc != False:
@@ -131,7 +157,7 @@ def acceptableLocation(l, seeds, haveLocs):
   stts = getSettings()
   locmin = stts["locmin"]
   out = False
-  if l != "None":
+  if len(l) > 0:
     locdb = getLocDB()
     try:
       [place, lat, lng] = locdb[l]
@@ -146,10 +172,10 @@ def acceptableLocation(l, seeds, haveLocs):
       fin.close()
       g = geocoders.GoogleV3()
       try:
-        time.sleep(20.0) # sleep a bit so that we do not overdo the geocoder
+        time.sleep(35.0) # sleep a bit so that we do not overdo the geocoder, 
+                         #with 35 seconds, you can do 2500 requests a day
         place, (lat, lng) = list(g.geocode(l.encode("utf-8"), 
                                            exactly_one=False))[0]
-        print "\tnormalized", l, "to", place
         for location in locations:
           location = location.strip()
           regex = re.compile(r"\b" + location + r"\b", re.IGNORECASE)
@@ -164,7 +190,7 @@ def acceptableLocation(l, seeds, haveLocs):
               locdb[l] = [place, lat, lng]
               setLocDB(locdb)
       except Exception, e:
-        continue
+        print "\t", e
   return out
 
 def saveSeeds(seeds):
@@ -199,25 +225,30 @@ def getTweets(uname, loc):
   """ fetch the tweets of a given user, parameter loc is the standardized
       location for this user """
   out = []
-  try:
-    time.sleep(10) # sleep as there is a limited amount of calls to twitter
-    # the following call gets all the data
+
+  # call to api
+  rls = api.GetRateLimitStatus()
+  if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
     tl = api.GetUserTimeline(uname, include_entities=False, count=2000)
-    print "\tfound", len(tl), "statuses"
-    # go through the data that was retrieved from twitter
-    for s in tl:
-      date = s.created_at # data
-      identifier = unicode(s.id) # tweet id
-      text = s.text # tweet itself
-      reploc = s.GetUser().location # reported location
-      if reploc == None:
-        reploc = "NA"
-      out.append( unicode("<tweet user=\"" + uname + "\" norm_loc=\"" + loc + 
-                          "\" rep_loc=\"" + reploc + "\" date=\"" + date + 
-                          "\" id=\"" +   identifier + "\">" + text + 
-                          "</tweet>") )
-  except:
-    print "something went wrong, just skipping this"
+  else:
+    sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
+    print "sleeping for", sleeptime + 5, "seconds"
+    time.sleep(sleeptime + 5)
+    tl = api.GetUserTimeline(uname, include_entities=False, count=2000)
+
+  print "\tfound", len(tl), "statuses"
+  # go through the data that was retrieved from twitter
+  for s in tl:
+    date = s.created_at # data
+    identifier = unicode(s.id) # tweet id
+    text = s.text # tweet itself
+    reploc = s.GetUser().location # reported location
+    if reploc == None:
+      reploc = "NA"
+    out.append( unicode("<tweet user=\"" + uname + "\" norm_loc=\"" + loc + 
+                        "\" rep_loc=\"" + reploc + "\" date=\"" + date + 
+                        "\" id=\"" +   identifier + "\">" + text + 
+                        "</tweet>") )
   return out
 
 def xmlstore(l):
