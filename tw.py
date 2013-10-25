@@ -73,14 +73,12 @@ def getFriends(s, seeds, api):
 
   # call to api
   rls = api.GetRateLimitStatus()
-  print rls["resources"]["followers"]["/followers/ids"]["remaining"]
   if rls["resources"]["followers"]["/followers/ids"]["remaining"] > 1:
     ids = api.GetFollowerIDs(screen_name=uname)
   else:
     sleeptime = rls["resources"]["followers"]["/followers/ids"]["reset"] - time.time()
     print "sleeping for", sleeptime + 5, "seconds"
     time.sleep(sleeptime + 5)
-    print rls["resources"]["followers"]
     ids = api.GetFollowerIDs(screen_name=uname)
 
   haveLocs = usersByLoc(seeds)
