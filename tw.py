@@ -60,17 +60,7 @@ def getNewSeeds(sample, seeds, api):
   for s in sample:
     print "seed ", i, s
     i = i + 1
-
-    # call to api
-    rls = api.GetRateLimitStatus()
-    if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
-      friends = getFriends(s, seeds, api)
-    else:
-      sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
-      print "sleeping for", sleeptime + 5, "seconds"
-      time.sleep(sleeptime + 5)
-      friends = getFriends(s, seeds, api)
-
+    friends = getFriends(s, seeds, api)
     remaining = set(friends) - set(seeds) - set(out)
     out.extend(list(remaining))
   return out
@@ -83,12 +73,14 @@ def getFriends(s, seeds, api):
 
   # call to api
   rls = api.GetRateLimitStatus()
-  if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
+  print rls["resources"]["followers"]["/followers/ids"]["remaining"]
+  if rls["resources"]["followers"]["/followers/ids"]["remaining"] > 1:
     ids = api.GetFollowerIDs(screen_name=uname)
   else:
-    sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
+    sleeptime = rls["resources"]["followers"]["/followers/ids"]["reset"] - time.time()
     print "sleeping for", sleeptime + 5, "seconds"
     time.sleep(sleeptime + 5)
+    print rls["resources"]["followers"]
     ids = api.GetFollowerIDs(screen_name=uname)
 
   haveLocs = usersByLoc(seeds)
@@ -97,10 +89,10 @@ def getFriends(s, seeds, api):
 
     # call to api
     rls = api.GetRateLimitStatus()
-    if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
+    if rls["resources"]["users"]["/users/show/:id"]["remaining"] > 1:
       friend = api.GetUser(user_id=ajd)
     else:
-      sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
+      sleeptime = rls["resources"]["users"]["/users/show/:id"]["reset"] - time.time()
       print "sleeping for", sleeptime + 5, "seconds"
       time.sleep(sleeptime + 5)
       friend = api.GetUser(user_id=ajd)
@@ -228,10 +220,10 @@ def getTweets(uname, loc):
 
   # call to api
   rls = api.GetRateLimitStatus()
-  if rls["resources"]["application"]["/application/rate_limit_status"]["remaining"] > 1:
+  if rls["resources"]["statuses"]["/statuses/user_timeline"]["remaining"] > 1:
     tl = api.GetUserTimeline(uname, include_entities=False, count=2000)
   else:
-    sleeptime = rls["resources"]["application"]["/application/rate_limit_status"]["reset"] - time.time()
+    sleeptime = rls["resources"]["statuses"]["/statuses/user_timeline"]["reset"] - time.time()
     print "sleeping for", sleeptime + 5, "seconds"
     time.sleep(sleeptime + 5)
     tl = api.GetUserTimeline(uname, include_entities=False, count=2000)
