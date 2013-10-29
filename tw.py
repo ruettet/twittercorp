@@ -68,39 +68,41 @@ def getNewSeeds(sample, seeds, api):
 def getFriends(s, seeds, api):
   """ call the twitter api for new friends from a single user """
   out = []
-  uname = unicode(s[0])
-  print "searching friends for", s
-
-  # call to api
-  rls = api.GetRateLimitStatus()
-  if rls["resources"]["friends"]["/friends/ids"]["remaining"] > 1:
-    ids = api.GetFriendIDs(screen_name=uname)
-  else:
-    sleeptime = rls["resources"]["friends"]["/friends/ids"]["reset"] - time.time()
-    print "sleeping for", sleeptime + 5, "seconds"
-    time.sleep(sleeptime + 5)
-    ids = api.GetFriendIDs(screen_name=uname)
-
-  haveLocs = usersByLoc(seeds)
-  count = 1
-  for ajd in ids:
-
+  try:
+    uname = unicode(s[0])
+    print "searching friends for", s
     # call to api
     rls = api.GetRateLimitStatus()
-    if rls["resources"]["users"]["/users/show/:id"]["remaining"] > 1:
-      friend = api.GetUser(user_id=ajd)
+    if rls["resources"]["friends"]["/friends/ids"]["remaining"] > 1:
+      ids = api.GetFriendIDs(screen_name=uname)
     else:
-      sleeptime = rls["resources"]["users"]["/users/show/:id"]["reset"] - time.time()
+      sleeptime = rls["resources"]["friends"]["/friends/ids"]["reset"] - time.time()
       print "sleeping for", sleeptime + 5, "seconds"
       time.sleep(sleeptime + 5)
-      friend = api.GetUser(user_id=ajd)
+      ids = api.GetFriendIDs(screen_name=uname)
+    haveLocs = usersByLoc(seeds)
+    count = 1
+    for ajd in ids:
+      # call to api
+      rls = api.GetRateLimitStatus()
+      if rls["resources"]["users"]["/users/show/:id"]["remaining"] > 1:
+        friend = api.GetUser(user_id=ajd)
+      else:
+        sleeptime = rls["resources"]["users"]["/users/show/:id"]["reset"] - time.time()
+        print "sleeping for", sleeptime + 5, "seconds"
+        time.sleep(sleeptime + 5)
+        friend = api.GetUser(user_id=ajd)
 
-    floc = unicode(friend.location)
-    checkedloc = acceptableLocation(floc, seeds, haveLocs)
-    if checkedloc != False:
-      print "\tadding:", unicode(friend.screen_name), floc, checkedloc, count, "of", len(ids)
-      out.append( (unicode(friend.screen_name), unicode(checkedloc[0])) )
-    count = count + 1
+      floc = unicode(friend.location)
+      checkedloc = acceptableLocation(floc, seeds, haveLocs)
+      if checkedloc != False:
+        print "\tadding:", unicode(friend.screen_name), floc, checkedloc, count, "of", len(ids)
+        out.append( (unicode(friend.screen_name), unicode(checkedloc[0])) )
+      count = count + 1
+  except twitter.TwitterError:
+    print "\tsleeping for a while to give things a bit of a break"
+    time.sleep(360.0)
+    out = getFriends(s, seeds, api)
   return out
 
 def getLocDB():
