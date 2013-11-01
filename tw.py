@@ -84,14 +84,19 @@ def getFriends(s, seeds, api):
     count = 1
     for ajd in ids:
       # call to api
-      rls = api.GetRateLimitStatus()
-      if rls["resources"]["users"]["/users/show/:id"]["remaining"] > 1:
-        friend = api.GetUser(user_id=ajd)
-      else:
-        sleeptime = rls["resources"]["users"]["/users/show/:id"]["reset"] - time.time()
-        print "sleeping for", sleeptime + 5, "seconds"
-        time.sleep(sleeptime + 5)
-        friend = api.GetUser(user_id=ajd)
+      try:
+        rls = api.GetRateLimitStatus()
+        if rls["resources"]["users"]["/users/show/:id"]["remaining"] > 1:
+          friend = api.GetUser(user_id=ajd)
+        else:
+          sleeptime = rls["resources"]["users"]["/users/show/:id"]["reset"] - time.time()
+          print "sleeping for", sleeptime + 5, "seconds"
+          time.sleep(sleeptime + 5)
+          friend = api.GetUser(user_id=ajd)
+      except twitter.TwitterError:
+        print "\tsleeping for a while to give things a bit of a break"
+        time.sleep(360.0)
+        continue
 
       floc = unicode(friend.location)
       checkedloc = acceptableLocation(floc, seeds, haveLocs)
