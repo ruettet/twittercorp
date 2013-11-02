@@ -93,7 +93,7 @@ def getFriends(s, seeds, api):
           print "sleeping for", sleeptime + 5, "seconds"
           time.sleep(sleeptime + 5)
           friend = api.GetUser(user_id=ajd)
-      except::
+      except:
         print "\tsleeping for a while to give things a bit of a break"
         time.sleep(900.0)
         continue
