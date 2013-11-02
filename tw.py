@@ -93,9 +93,9 @@ def getFriends(s, seeds, api):
           print "sleeping for", sleeptime + 5, "seconds"
           time.sleep(sleeptime + 5)
           friend = api.GetUser(user_id=ajd)
-      except twitter.TwitterError:
+      except::
         print "\tsleeping for a while to give things a bit of a break"
-        time.sleep(360.0)
+        time.sleep(900.0)
         continue
 
       floc = unicode(friend.location)
@@ -104,9 +104,9 @@ def getFriends(s, seeds, api):
         print "\tadding:", unicode(friend.screen_name), floc, checkedloc, count, "of", len(ids)
         out.append( (unicode(friend.screen_name), unicode(checkedloc[0])) )
       count = count + 1
-  except twitter.TwitterError:
+  except:
     print "\tsleeping for a while to give things a bit of a break"
-    time.sleep(360.0)
+    time.sleep(900.0)
     out = getFriends(s, seeds, api)
   return out
 
