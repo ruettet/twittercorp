@@ -45,9 +45,9 @@ def getPriorSeeds(f):
     i = 0
     haveLocs = usersByLoc(seeds)
     while i < len(seeds):
-      loc = acceptableLocation(seeds[i+1], [], haveLocs)
+      loc = acceptableLocation(seeds[i+1].strip(), [], haveLocs)
       if loc != False:
-        seed = (unicode(seeds[i]), unicode(loc[0]))
+        seed = (unicode(seeds[i].strip()), unicode(loc[0]))
         out.append(seed)
       i = i + 2
   return out
@@ -96,8 +96,7 @@ def getFriends(s, seeds, api):
       except:
         print "\tsleeping for a while to give things a bit of a break"
         time.sleep(900.0)
-        break
-
+        continue
       floc = unicode(friend.location)
       checkedloc = acceptableLocation(floc, seeds, haveLocs)
       if checkedloc != False:
@@ -107,7 +106,7 @@ def getFriends(s, seeds, api):
   except:
     print "\tsleeping for a while to give things a bit of a break"
     time.sleep(900.0)
-    out = getFriends(s, seeds, api)
+    continue
   return out
 
 def getLocDB():
@@ -288,6 +287,15 @@ def getUserNames():
     fin.close()
     out.extend( regex.findall(xml) )
   return set(out)
+
+def export_corpus():
+  return "NA"
+
+def import_corpus():
+  return "NA"
+
+def search(regex):
+  return "NA"
 
 def main():
   """ this is where it all starts """

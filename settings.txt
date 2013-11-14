@@ -14,5 +14,6 @@ access_token_secret=d
 # provide here a number of seeds (twitter usernames from people from the region 
 # you want to scrape with lots of friends, e.g. newspapers or politicians. Make 
 # sure they report their location. These will be used to set things in motion. 
-# (separate by commas and no spaces, replace a and b with seeds)
+# (separate by commas, replace a and b with "seed,location")
+# example: new_seeds=user1,user1location,user2,user2location
 new_seeds=a,b
