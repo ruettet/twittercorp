@@ -36,11 +36,13 @@ In this quick user guide, the script is explained from the perspective of the us
 
 \subsection{Installing dependencies}
 
-The tw.py script depends on two python modules: \texttt{python-geopy} and the \texttt{python-twitter} module. The latter depends in its turn on \texttt{python-oauth2}, \texttt{python-urllib2} and \texttt{python-json}.
+The tw.py script depends on two python modules: \texttt{python-geopy} and the \texttt{python-twitter} module. The former can be installed with \texttt{easy\_install}, as described at \texttt{https://code.google.com/p/geopy/wiki/Installation}. The latter depends in its turn on \texttt{python-oauth2}, \texttt{python-urllib2} and \texttt{python-json}. Instructions for getting \texttt{python-twitter} to work can be found at \texttt{https://github.com/bear/python-twitter}. Note that this is not the \texttt{easy\_install} version!
 
 \subsection{Obtaining a Twitter API key}
 
-To access Twitter, it is necessary to obtain a Twitter API key via \texttt{dev.twitter.com}.
+To access Twitter, it is necessary to obtain a Twitter API key via \texttt{dev.twitter.com}. Sign in with your regular Twitter user credentials. At the same place where you signed in, select ``My applications''. Create a new application for use with this script, and Twitter API credentials will be provided.
+
+The script takes great care in not violating the Twitter Terms of Service and respects the rate limits. You should be fine as long as you do not fiddle too much with the script.
 
 \subsection{Entering settings}
 

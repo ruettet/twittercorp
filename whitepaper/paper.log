@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian) (format=pdflatex 2013.11.14)  14 NOV 2013 19:04
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian) (format=pdflatex 2013.11.14)  15 NOV 2013 10:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -387,32 +387,25 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-Overfull \hbox (22.21416pt too wide) in paragraph at lines 39--40
-\OT1/cmr/m/n/10.95 The twit-ter-corp script \OT1/cmtt/m/n/10.95 tw.py \OT1/cmr/
-m/n/10.95 de-pends on \OT1/cmtt/m/n/10.95 python-geopy \OT1/cmr/m/n/10.95 and t
-he \OT1/cmtt/m/n/10.95 python-twitter
- []
-
-
 Overfull \hbox (33.62032pt too wide) in paragraph at lines 43--44
 \OT1/cmr/m/n/10.95 To ac-cess Twit-ter, it is nec-es-sary to ob-tain a Twit-ter
- API key via \OT1/cmtt/m/n/10.95 dev.twitter.com\OT1/cmr/m/n/10.95 . 
+ API key via \OT1/cmtt/m/n/10.95 dev.twitter.com\OT1/cmr/m/n/10.95 .
  []
 
 [2]
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 50.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 52.
  (/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 50.
-
-Overfull \hbox (2.08046pt too wide) in paragraph at lines 66--67
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 52.
+ [3]
+Overfull \hbox (2.08046pt too wide) in paragraph at lines 68--69
 \OT1/cmr/m/n/10.95 transparant which as-sump-tions are be-ing made dur-ing the 
 com-pi-la-tion phase. 
  []
 
-[3] [4] [5] [6] (./paper.aux) ) 
+[4] [5] [6] [7] (./paper.aux) ) 
 Here is how much of TeX's memory you used:
  2359 strings out of 495059
  30992 string characters out of 3182029
@@ -432,10 +425,10 @@ ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texlive/tex
 mf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist
 /fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fonts
 /type1/public/amsfonts/cm/cmtt9.pfb>
-Output written on paper.pdf (6 pages, 147612 bytes).
+Output written on paper.pdf (7 pages, 149283 bytes).
 PDF statistics:
- 67 PDF objects out of 1000 (max. 8388607)
- 47 compressed objects within 1 object stream
+ 72 PDF objects out of 1000 (max. 8388607)
+ 51 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
