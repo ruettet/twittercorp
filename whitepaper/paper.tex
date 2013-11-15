@@ -1,4 +1,4 @@
-\documentclass[a4paper,10pt]{article}
+\documentclass[a4paper,11pt]{article}
 
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
@@ -36,7 +36,7 @@ In this quick user guide, the script is explained from the perspective of the us
 
 \subsection{Installing dependencies}
 
-The twittercorp script \texttt{tw.py} depends on \texttt{python-geopy} and the \texttt{python-twitter} module, which in its turn depends on \texttt{python-oauth2}, \texttt{python-urllib2} and \texttt{python-json}.
+The tw.py script depends on two python modules: \texttt{python-geopy} and the \texttt{python-twitter} module. The latter depends in its turn on \texttt{python-oauth2}, \texttt{python-urllib2} and \texttt{python-json}.
 
 \subsection{Obtaining a Twitter API key}
 
@@ -48,7 +48,7 @@ The main settings for the script need to be entered in the file \texttt{settings
 
 \begin{itemize}
   \item convergence: the \texttt{convergence} value indicates how many Twitter users need to be gathered before the collection of actual tweets should start. Basically, this number directly influences the size of the corpus.
-  \item locmin: in order to obtain a corpus that contains a comparable amount of Twitter users from the available locations, the \texttt{locmin} value indicates a target amount of Twitter users per location. In other words, once a location reaches the amount of Twitter users in \textt{locmin}, no further users will be added from that location. For that matter, \texttt{locmin} could also be called \texttt{locmax}.
+  \item locmin: in order to obtain a corpus that contains a comparable amount of Twitter users from the available locations, the \texttt{locmin} value indicates a target amount of Twitter users per location. In other words, once a location reaches the amount of Twitter users in \texttt{locmin}, no further users will be added from that location. For that matter, \texttt{locmin} could also be called \texttt{locmax}.
   \item Twitter api creditials: these are the API credentials that are provided by Twitter.
   \item new\_seeds: this is a small list of high profile Twitter users from the region for which one wants to compile a Twitter corpus. The location of the Twitter user needs to be set as well. The resulting value is a comma separated list of user, location, user, location, etc.
 \end{itemize}
