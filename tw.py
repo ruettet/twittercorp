@@ -106,7 +106,6 @@ def getFriends(s, seeds, api):
   except:
     print "\tsleeping for a while to give things a bit of a break"
     time.sleep(900.0)
-    continue
   return out
 
 def getLocDB():
