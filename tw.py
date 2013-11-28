@@ -45,9 +45,9 @@ def getPriorSeeds(f):
     i = 0
     haveLocs = usersByLoc(seeds)
     while i < len(seeds):
-      loc = acceptableLocation(seeds[i+1], [], haveLocs)
+      loc = acceptableLocation(seeds[i+1].strip(), [], haveLocs)
       if loc != False:
-        seed = (unicode(seeds[i]), unicode(loc[0]))
+        seed = (unicode(seeds[i].strip()), unicode(loc[0]))
         out.append(seed)
       i = i + 2
   return out
@@ -58,6 +58,7 @@ def getNewSeeds(sample, seeds, api):
   out = []
   i = 1
   for s in sample:
+    print "seed ", i, s
     i = i + 1
     friends = getFriends(s, seeds, api)
     remaining = set(friends) - set(seeds) - set(out)
@@ -65,25 +66,20 @@ def getNewSeeds(sample, seeds, api):
   return out
 
 def getFriends(s, seeds, api):
-    """ call the twitter api for new friends from a single user """
-    out = []
+  """ call the twitter api for new friends from a single user """
+  out = []
+  try:
     uname = unicode(s[0])
     print "searching friends for", s
     # call to api
     rls = api.GetRateLimitStatus()
     if rls["resources"]["friends"]["/friends/ids"]["remaining"] > 1:
-      try:
-        ids = api.GetFriendIDs(screen_name=uname)
-      except twitter.TwitterError:
-        ids = []
+      ids = api.GetFriendIDs(screen_name=uname)
     else:
       sleeptime = rls["resources"]["friends"]["/friends/ids"]["reset"] - time.time()
       print "sleeping for", sleeptime + 5, "seconds"
       time.sleep(sleeptime + 5)
-      try:
-        ids = api.GetFriendIDs(screen_name=uname)
-      except twitter.TwitterError:
-        ids = []
+      ids = api.GetFriendIDs(screen_name=uname)
     haveLocs = usersByLoc(seeds)
     count = 1
     for ajd in ids:
@@ -101,14 +97,16 @@ def getFriends(s, seeds, api):
         print "\tsleeping for a while to give things a bit of a break"
         time.sleep(900.0)
         continue
-
       floc = unicode(friend.location)
       checkedloc = acceptableLocation(floc, seeds, haveLocs)
       if checkedloc != False:
         print "\tadding:", unicode(friend.screen_name), floc, checkedloc, count, "of", len(ids)
         out.append( (unicode(friend.screen_name), unicode(checkedloc[0])) )
       count = count + 1
-    return out
+  except:
+    print "\tsleeping for a while to give things a bit of a break"
+    time.sleep(900.0)
+  return out
 
 def getLocDB():
   """ read the db in which normalizations of reported locations are stored """
@@ -140,8 +138,6 @@ def getLocDBnorm():
     print "no location database available"
   return db
   
-
-
 def setLocDB(db):
   """ store the db with normalizations of reported locations """
   lines = []
@@ -204,7 +200,7 @@ def acceptableLocation(l, seeds, haveLocs):
               locdb[l] = [place, lat, lng]
               setLocDB(locdb)
       except Exception, e:
-        out = out
+        print "\t", e
   return out
 
 def saveSeeds(seeds):
@@ -306,6 +302,15 @@ def getUserNames():
     out.extend( regex.findall(xml) )
   return set(out)
 
+def export_corpus():
+  return "NA"
+
+def import_corpus():
+  return "NA"
+
+def search(regex):
+  return "NA"
+
 def main():
   """ this is where it all starts """
   # get user input from file
@@ -332,8 +337,8 @@ def main():
       print "grabbing tweets for", seed, loc
       try:
         tweets.extend( getTweets(seed, loc, api) )
-      except Exception:
-        print "\tException", Exception
+      except Exception, e:
+        print "\tException", e
       if len(tweets) > 10000:
         xmlstore(tweets)
         tweets = []
