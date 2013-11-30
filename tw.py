@@ -182,8 +182,7 @@ def acceptableLocation(l, seeds, haveLocs):
       fin.close()
       g = geocoders.GoogleV3()
       try:
-        time.sleep(35.0) # sleep a bit so that we do not overdo the geocoder, 
-                         #with 35 seconds, you can do 2500 requests a day
+        time.sleep(20.0) # sleep a bit so that we do not overdo the geocoder
         place, (lat, lng) = list(g.geocode(l.encode("utf-8"), 
                                            exactly_one=False))[0]
         for location in locations:
@@ -200,7 +199,7 @@ def acceptableLocation(l, seeds, haveLocs):
               locdb[l] = [place, lat, lng]
               setLocDB(locdb)
       except Exception, e:
-        print "\t", e
+        out = out
   return out
 
 def saveSeeds(seeds):
