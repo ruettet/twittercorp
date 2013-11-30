@@ -183,7 +183,7 @@ def acceptableLocation(l, seeds, haveLocs):
       fin.close()
       g = geocoders.GoogleV3()
       try:
-        time.sleep(20	.0) # sleep a bit so that we do not overdo the geocoder
+        time.sleep(20.0) # sleep a bit so that we do not overdo the geocoder
         place, (lat, lng) = list(g.geocode(l.encode("utf-8"), 
                                            exactly_one=False))[0]
         for location in locations:
@@ -311,8 +311,19 @@ def import_corpus():
   xml as before """
   return "NA"
 
-def search(regex):
-  """ search for the regex in the text of tweets, output with columns """
+def search(regexstr):
+  """ search for the regex in the text of tweets """
+  out = []
+  # TODO: regex more complicated to also return metadata 
+  regex = re.compile(r">(.*?" + regexstr + r".*?)<", re.IGNORECASE)
+  fl = glob.glob("./tweets/*")
+  for f in fl:
+    fin = codecs.open(f, "r", "utf-8")
+    xml = fin.read()
+    fin.close()
+    out.extend( regex.findall(xml) )
+  return list(set(out))
+
   return "NA"
 
 def main():
