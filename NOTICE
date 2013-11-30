@@ -1,0 +1,14 @@
+   =========================================================================
+   ==  NOTICE file for use with the Apache License, Version 2.0,          ==
+   ==  in this case for the twittercorp script.                           ==
+   =========================================================================
+
+   Twittercorp
+   Copyright 2013 Tom Ruette
+
+   This script has been developed at
+   KU Leuven, HU Berlin, University of Freiburg (Germany)
+
+   Dependencies:
+   - python-twitter: https://github.com/bear/python-twitter, Apache2 License
+   - geopy: http://code.google.com/p/geopy/, MIT License
