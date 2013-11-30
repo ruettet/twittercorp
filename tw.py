@@ -58,7 +58,6 @@ def getNewSeeds(sample, seeds, api):
   out = []
   i = 1
   for s in sample:
-    print "seed ", i, s
     i = i + 1
     friends = getFriends(s, seeds, api)
     remaining = set(friends) - set(seeds) - set(out)
@@ -182,7 +181,7 @@ def acceptableLocation(l, seeds, haveLocs):
       fin.close()
       g = geocoders.GoogleV3()
       try:
-        time.sleep(20.0) # sleep a bit so that we do not overdo the geocoder
+        time.sleep(20	.0) # sleep a bit so that we do not overdo the geocoder
         place, (lat, lng) = list(g.geocode(l.encode("utf-8"), 
                                            exactly_one=False))[0]
         for location in locations:
