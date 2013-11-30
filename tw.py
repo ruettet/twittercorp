@@ -54,7 +54,7 @@ def getPriorSeeds(f):
 
 def getNewSeeds(sample, seeds, api):
   """ wrapper to get from a list of seeds (sample) new seeds that do not occur
-      in the given seeds (seeds) already """
+  in the given seeds (seeds) already """
   out = []
   i = 1
   for s in sample:
@@ -108,7 +108,8 @@ def getFriends(s, seeds, api):
   return out
 
 def getLocDB():
-  """ read the db in which normalizations of reported locations are stored """
+  """ read the db in which normalizations of reported locations are stored, rep
+  loc is key, norm loc, lat and long are values """
   db = {}
   try:
     fin = codecs.open("locdb.txt", "r", "utf-8")
@@ -123,7 +124,8 @@ def getLocDB():
   return db
   
 def getLocDBnorm():
-  """ read the db in which normalizations of reported locations are stored """
+  """ read the db in which normalizations of reported locations are stored, norm
+  loc is key, lat and long are values """
   db = {}
   try:
     fin = codecs.open("locdb.txt", "r", "utf-8")
@@ -231,7 +233,7 @@ def getSeeds(api):
 
 def getTweets(uname, loc, api):
   """ fetch the tweets of a given user, parameter loc is the standardized
-      location for this user """
+  location for this user """
   out = []
   locdb = getLocDBnorm()
   # call to api
@@ -301,16 +303,21 @@ def getUserNames():
   return set(out)
 
 def export_corpus():
+  """ return a csv with tweet id, norm loc, lat and long """
   return "NA"
 
 def import_corpus():
+  """ from the output of export_corpus, download the tweet and reconstruct the 
+  xml as before """
   return "NA"
 
 def search(regex):
+  """ search for the regex in the text of tweets, output with columns """
   return "NA"
 
 def main():
-  """ this is where it all starts """
+  """ this is where it all starts: twitter users are sought, and if enough users
+  are found, their tweets are downloaded """
   # get user input from file
   print "reading in settings..."
   stts = getSettings()
