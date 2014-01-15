@@ -1,3 +1,17 @@
+#   Copyright 2013 Tom Ruette
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 import re, twitter, glob, random, time, codecs, hashlib
 from geopy import geocoders
 from collections import Counter
@@ -54,11 +68,10 @@ def getPriorSeeds(f):
 
 def getNewSeeds(sample, seeds, api):
   """ wrapper to get from a list of seeds (sample) new seeds that do not occur
-      in the given seeds (seeds) already """
+  in the given seeds (seeds) already """
   out = []
   i = 1
   for s in sample:
-    print "seed ", i, s
     i = i + 1
     friends = getFriends(s, seeds, api)
     remaining = set(friends) - set(seeds) - set(out)
@@ -72,26 +85,26 @@ def getFriends(s, seeds, api):
     uname = unicode(s[0])
     print "searching friends for", s
     # call to api
-    rls = api.GetRateLimitStatus()
+    rls = getRateLimitStatus(api)
     if rls["resources"]["friends"]["/friends/ids"]["remaining"] > 1:
       ids = api.GetFriendIDs(screen_name=uname)
     else:
       sleeptime = rls["resources"]["friends"]["/friends/ids"]["reset"] - time.time()
-      print "sleeping for", sleeptime + 5, "seconds"
-      time.sleep(sleeptime + 5)
+      print "sleeping for", sleeptime + 100, "seconds"
+      time.sleep(sleeptime + 100)
       ids = api.GetFriendIDs(screen_name=uname)
     haveLocs = usersByLoc(seeds)
     count = 1
     for ajd in ids:
       # call to api
       try:
-        rls = api.GetRateLimitStatus()
+        rls = getRateLimitStatus(api)
         if rls["resources"]["users"]["/users/show/:id"]["remaining"] > 1:
           friend = api.GetUser(user_id=ajd)
         else:
           sleeptime = rls["resources"]["users"]["/users/show/:id"]["reset"] - time.time()
-          print "sleeping for", sleeptime + 5, "seconds"
-          time.sleep(sleeptime + 5)
+          print "sleeping for", sleeptime + 100, "seconds"
+          time.sleep(sleeptime + 100)
           friend = api.GetUser(user_id=ajd)
       except:
         print "\tsleeping for a while to give things a bit of a break"
@@ -109,7 +122,8 @@ def getFriends(s, seeds, api):
   return out
 
 def getLocDB():
-  """ read the db in which normalizations of reported locations are stored """
+  """ read the db in which normalizations of reported locations are stored, rep
+  loc is key, norm loc, lat and long are values """
   db = {}
   try:
     fin = codecs.open("locdb.txt", "r", "utf-8")
@@ -122,7 +136,23 @@ def getLocDB():
   except IOError:
     print "no location database available"
   return db
-
+  
+def getLocDBnorm():
+  """ read the db in which normalizations of reported locations are stored, norm
+  loc is key, lat and long are values """
+  db = {}
+  try:
+    fin = codecs.open("locdb.txt", "r", "utf-8")
+    lines = fin.readlines()
+    fin.close()
+    for line in lines:
+      l = line.strip().split("\t")
+      if len(l) == 4:
+        db[l[1]] = [l[2], l[3]]
+  except IOError:
+    print "no location database available"
+  return db
+  
 def setLocDB(db):
   """ store the db with normalizations of reported locations """
   lines = []
@@ -167,8 +197,7 @@ def acceptableLocation(l, seeds, haveLocs):
       fin.close()
       g = geocoders.GoogleV3()
       try:
-        time.sleep(35.0) # sleep a bit so that we do not overdo the geocoder, 
-                         #with 35 seconds, you can do 2500 requests a day
+        time.sleep(20.0) # sleep a bit so that we do not overdo the geocoder
         place, (lat, lng) = list(g.geocode(l.encode("utf-8"), 
                                            exactly_one=False))[0]
         for location in locations:
@@ -185,7 +214,7 @@ def acceptableLocation(l, seeds, haveLocs):
               locdb[l] = [place, lat, lng]
               setLocDB(locdb)
       except Exception, e:
-        print "\t", e
+        out = out
   return out
 
 def saveSeeds(seeds):
@@ -216,34 +245,42 @@ def getSeeds(api):
     print "there are now", len(seeds), "available"
   return seeds
 
-def getTweets(uname, loc):
+def getRateLimitStatus(api):
+  try:
+    return api.GetRateLimitStatus()
+  except:
+    print "sleeping for 5 minutes to give the api some rest"
+    time.sleep(300.00)
+  return getRateLimitStatus(api)
+  
+def getTweets(uname, loc, api):
   """ fetch the tweets of a given user, parameter loc is the standardized
-      location for this user """
+  location for this user """
   out = []
-
+  locdb = getLocDBnorm()
   # call to api
-  rls = api.GetRateLimitStatus()
+  rls = getRateLimitStatus(api)
   if rls["resources"]["statuses"]["/statuses/user_timeline"]["remaining"] > 1:
-    tl = api.GetUserTimeline(uname, include_entities=False, count=2000)
+    tl = api.GetUserTimeline(screen_name=uname, count=200)
   else:
     sleeptime = rls["resources"]["statuses"]["/statuses/user_timeline"]["reset"] - time.time()
-    print "sleeping for", sleeptime + 5, "seconds"
-    time.sleep(sleeptime + 5)
-    tl = api.GetUserTimeline(uname, include_entities=False, count=2000)
-
+    print "sleeping for", sleeptime + 100, "seconds"
+    time.sleep(sleeptime + 100)
+    tl = api.GetUserTimeline(screen_name=uname, count=200)  
   print "\tfound", len(tl), "statuses"
-  # go through the data that was retrieved from twitter
   for s in tl:
-    date = s.created_at # data
+    source = unicode(s.source) # source
+    date = unicode(s.created_at) # data
     identifier = unicode(s.id) # tweet id
-    text = s.text # tweet itself
-    reploc = s.GetUser().location # reported location
+    text = unicode(s.text).replace("\n", " ").replace("\r", " ") # tweet itself
+    reploc = unicode(s.user.location) # reported location
+    (lat, lng) = locdb[loc] # geo
     if reploc == None:
       reploc = "NA"
-    out.append( unicode("<tweet user=\"" + uname + "\" norm_loc=\"" + loc + 
-                        "\" rep_loc=\"" + reploc + "\" date=\"" + date + 
-                        "\" id=\"" +   identifier + "\">" + text + 
-                        "</tweet>") )
+    out.append( unicode(u"<tweet user=\"" + uname + u"\" norm_loc=\"" + loc + 
+                        u"\" rep_loc=\"" + reploc + u"\" date=\"" + date + 
+                        u"\" id=\"" +  identifier + u"\" lat=\"" + lat + 
+                        u"\" lng=\"" + lng + u"\">" + text + u"</tweet>") )
   return out
 
 def xmlstore(l):
@@ -288,16 +325,32 @@ def getUserNames():
   return set(out)
 
 def export_corpus():
+  """ return a csv with tweet id, norm loc, lat and long """
   return "NA"
 
 def import_corpus():
+  """ from the output of export_corpus, download the tweet and reconstruct the 
+  xml as before """
   return "NA"
 
-def search(regex):
+def search(regexstr):
+  """ search for the regex in the text of tweets """
+  out = []
+  # TODO: regex more complicated to also return metadata 
+  regex = re.compile(r">(.*?" + regexstr + r".*?)<", re.IGNORECASE)
+  fl = glob.glob("./tweets/*")
+  for f in fl:
+    fin = codecs.open(f, "r", "utf-8")
+    xml = fin.read()
+    fin.close()
+    out.extend( regex.findall(xml) )
+  return list(set(out))
+
   return "NA"
 
 def main():
-  """ this is where it all starts """
+  """ this is where it all starts: twitter users are sought, and if enough users
+  are found, their tweets are downloaded """
   # get user input from file
   print "reading in settings..."
   stts = getSettings()
@@ -320,7 +373,10 @@ def main():
   for (seed, loc) in sortedSeeds:
     if seed not in users_have:
       print "grabbing tweets for", seed, loc
-      tweets.extend( getTweets(seed, loc) )
+      try:
+        tweets.extend( getTweets(seed, loc, api) )
+      except Exception, e:
+        print "\tException", e
       if len(tweets) > 10000:
         xmlstore(tweets)
         tweets = []
